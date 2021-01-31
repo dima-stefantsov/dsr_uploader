@@ -1,6 +1,6 @@
 <?php
 define('DSR_UPLOADER_VERSION', 2);
-define('OLD_REPLAYS_CONFIG_PATH', __DIR__.'/old_replays.json');
+define('OLD_REPLAYS_CONFIG_PATH', getcwd().'/old_replays.json');
 
 echo "DS-RATING.COM replay uploader v".DSR_UPLOADER_VERSION."\n\n";
 ensure_latest_version();
@@ -109,8 +109,11 @@ function get_sc2_accounts_root_path() {
 }
 
 function press_any_key_to_exit() {
-    echo "\nPress ENTER to exit...";
-    fgetc(STDIN);
+    // It doesn't work when compiled to exe.
+    // fgetc(STDIN);
+    // echo "\nPress ENTER to exit...";
+    echo "\nProgram will close in 10 seconds...";
+    sleep(10);
     die;
 }
 
@@ -256,6 +259,7 @@ function post_upload_file($url, $file_path) {
 }
 
 function save_old_replay_paths($old_replay_paths) {
+    echo OLD_REPLAYS_CONFIG_PATH."\n";
     file_put_contents(OLD_REPLAYS_CONFIG_PATH, json_encode($old_replay_paths, JSON_PRETTY_PRINT));
     echo "\nSaved ".count($old_replay_paths)." processed replays list.\n";
 }
