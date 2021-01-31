@@ -259,7 +259,6 @@ function post_upload_file($url, $file_path) {
 }
 
 function save_old_replay_paths($old_replay_paths) {
-    echo OLD_REPLAYS_CONFIG_PATH."\n";
     file_put_contents(OLD_REPLAYS_CONFIG_PATH, json_encode($old_replay_paths, JSON_PRETTY_PRINT));
     echo "\nSaved ".count($old_replay_paths)." processed replays list.\n";
 }
