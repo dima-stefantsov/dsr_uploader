@@ -1,20 +1,22 @@
 <?php
-require_once dirname(__DIR__, 2).'/wp/vendor/autoload.php';
-require_once dirname(__DIR__, 2).'/wp/src/ds/helpers/kint.php';
-// define('DSR_DOMAIN', 'https://wp.local');
-
 define('DSR_DOMAIN', 'https://ds-rating.com');
 define('DSR_UPLOADER_BIN', __DIR__.'/uploader.php');
 define('DSR_UPLOADER_BIN_TEMP', __DIR__.'/uploader_temp.php');
 
 
 
+delete_uploader_bin_temp();
+
 $local_uploader_version = get_local_uploader_version(DSR_UPLOADER_BIN);
 $actual_uploader_version = get_actual_uploader_version();
 if ($actual_uploader_version === false) {
+    // echo already done inside get_actual_uploader_version() function.
     die;
 }
 if ($local_uploader_version === $actual_uploader_version) {
+    if (!in_array('print_level_service', $argv??[])) {
+        echo "You already have latest ds-rating.com_uploader v$local_uploader_version.\n";
+    }
     die;
 }
 
@@ -26,15 +28,15 @@ if ($new_uploader_content['fail'] ?? false) {
 }
 
 delete_uploader_bin_temp();
-$result = file_put_contents(DSR_UPLOADER_BIN_TEMP, $new_uploader_content);
-if ($result === false) {
+$successfully_written_temp = file_put_contents(DSR_UPLOADER_BIN_TEMP, $new_uploader_content);
+if ($successfully_written_temp === false) {
     echo "UPDATER: failed to write temp uploader file ".DSR_UPLOADER_BIN_TEMP."\n";
     delete_uploader_bin_temp();
     die;
 }
 
 $temp_uploader_version = get_local_uploader_version(DSR_UPLOADER_BIN_TEMP);
-if ($temp_uploader_version === false) {
+if ($temp_uploader_version === 0) {
     echo "UPDATER: failed to get new temp uploader version\n";
     delete_uploader_bin_temp();
     die;
@@ -46,7 +48,7 @@ if ($temp_uploader_version !== $actual_uploader_version) {
     die;
 }
 
-$successfully_replaced = rename(DSR_UPLOADER_BIN_TEMP, DSR_UPLOADER_BIN);
+$successfully_replaced = rename_safe(DSR_UPLOADER_BIN_TEMP, DSR_UPLOADER_BIN);
 if ($successfully_replaced === false) {
     echo "UPDATER: failed to replace old uploader with a new one. Maybe it's currently in use.\n";
     delete_uploader_bin_temp();
@@ -72,8 +74,11 @@ die;
 
 
 
+
+
+
 function get_local_uploader_version($uploader_bin) {
-    if (!file_exists(DSR_UPLOADER_BIN)) {
+    if (!file_exists($uploader_bin)) {
         return 0;
     }
 
@@ -142,6 +147,25 @@ function get_content($url) {
 
 function delete_uploader_bin_temp() {
     if (file_exists(DSR_UPLOADER_BIN_TEMP)) {
-        unlink(DSR_UPLOADER_BIN_TEMP);
+        @unlink(DSR_UPLOADER_BIN_TEMP);
     }
+}
+
+function rename_safe($from, $to) {
+    if (!file_exists($from)) {
+        return false;
+    }
+
+    if (file_exists($to)) {
+        @unlink($to);
+    }
+
+    if (!@rename($from, $to)) {
+        if (@copy($from, $to)) {
+            @unlink($from);
+            return true;
+        }
+        return false;
+    }
+    return true;
 }

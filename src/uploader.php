@@ -1,9 +1,5 @@
 <?php
-require_once dirname(__DIR__, 2).'/wp/vendor/autoload.php';
-require_once dirname(__DIR__, 2).'/wp/src/ds/helpers/kint.php';
-// define('DSR_DOMAIN', 'https://wp.local');
-
-define('DSR_UPLOADER_VERSION', 1);
+define('DSR_UPLOADER_VERSION', 5);
 define('OLD_REPLAYS_CONFIG_PATH', __DIR__.'/old_replays.json');
 define('DSR_DOMAIN', 'https://ds-rating.com');
 
