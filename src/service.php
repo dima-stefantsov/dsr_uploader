@@ -1,31 +1,47 @@
 <?php
-// require_once dirname(__DIR__, 2).'/wp/vendor/autoload.php';
-// require_once dirname(__DIR__, 2).'/wp/src/ds/helpers/kint.php';
-
-
 $php_bin = dirname(__DIR__).'/bin/php/php.exe';
-$uploader = dirname(__DIR__).'/src/uploader.php';
-$arguments = 'print_level_service';
+$uploader_bin = __DIR__.'/uploader.php';
+$uploader_arguments = 'print_level_service';
+$updater_bin = __DIR__.'/update.php';
 
-$cmd = "\"$php_bin\" \"$uploader\" $arguments";
+define('DSR_ERROR_CODE_VERSION', 10);
+define('CMD_UPLOADER', "\"$php_bin\" \"$uploader_bin\" $uploader_arguments");
+define('CMD_UPDATER', "\"$php_bin\" \"$updater_bin\"");
 
+
+
+run_updater(); // check for updates on each system startup, or once a ~day.
 for ($i = 0; $i < 100; $i++) {
-    run_uploader($cmd);
+    run_uploader();
+    sleep(11);
+    // sleep(rand(600,1800)); // check for new DS replays once every 10-30 minutes.
 }
-echo "100 done\n";
 
 
-// sleep(600);
 
-function run_uploader($cmd) {
-    exec($cmd, $output_lines, $result_code);
-    if ($result_code !== 0) {
-        echo "\nUploader finished with error code: $result_code\n";
-        die;
+
+
+
+
+
+
+
+
+
+function run_uploader() {
+    exec(CMD_UPLOADER, $output_lines, $result_code);
+    foreach ($output_lines as $output_line) {
+        echo $output_line."\n";
     }
 
+    if ($result_code === DSR_ERROR_CODE_VERSION) {
+        run_updater();
+    }
+}
+
+function run_updater() {
+    exec(CMD_UPDATER, $output_lines, $result_code);
     foreach ($output_lines as $output_line) {
         echo $output_line."\n";
     }
 }
-

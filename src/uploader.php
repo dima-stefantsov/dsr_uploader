@@ -3,13 +3,18 @@ require_once dirname(__DIR__, 2).'/wp/vendor/autoload.php';
 require_once dirname(__DIR__, 2).'/wp/src/ds/helpers/kint.php';
 // define('DSR_DOMAIN', 'https://wp.local');
 
-define('DSR_UPLOADER_VERSION', 2);
+define('DSR_UPLOADER_VERSION', 1);
 define('OLD_REPLAYS_CONFIG_PATH', __DIR__.'/old_replays.json');
 define('DSR_DOMAIN', 'https://ds-rating.com');
 
 define('DSR_PRINT_LEVEL_FULL', 0);
 define('DSR_PRINT_LEVEL_SERVICE', 5);
 define('DSR_PRINT_LEVEL_SILENT', 9);
+
+define('DSR_ERROR_CODE_OK', 0);
+define('DSR_ERROR_CODE_VERSION', 10);
+define('DSR_ERROR_CODE_ACCOUNT_PATH', 20);
+define('DSR_ERROR_CODE_REPLAY_PATH', 30);
 
 
 
@@ -32,7 +37,7 @@ $new_replay_paths = get_new_replay_paths($all_replay_paths, $old_replay_paths);
 $new_replays_count = count($new_replay_paths);
 dsr_print("New replays: $new_replays_count\n");
 if ($new_replays_count === 0) {
-    press_any_key_to_exit();
+    exit_with_error_code(DSR_ERROR_CODE_OK);
 }
 
 dsr_print("Uploading new replays...\n");
@@ -51,7 +56,7 @@ flush_all_buffered_text();
 // user will Ctrl+C early.
 save_old_replay_paths($old_replay_paths);
 
-press_any_key_to_exit();
+exit_with_error_code(DSR_ERROR_CODE_OK);
 
 
 
@@ -84,6 +89,10 @@ function process_command_line_arguments() {
         else if ($arg === 'print_level_silent') {
             $GLOBALS['print_level'] = DSR_PRINT_LEVEL_SILENT;
         }
+        else if ($arg === 'get_version') {
+            echo DSR_UPLOADER_VERSION;
+            exit_with_error_code(DSR_ERROR_CODE_OK);
+        }
     }
 }
 
@@ -93,7 +102,7 @@ function get_replay_folders() {
     $sc2_accounts_root_path = get_sc2_accounts_root_path();
     if ($sc2_accounts_root_path === false) {
         dsr_print("Could not find SC2 Accounts folder. Get help in Discord https://discord.gg/KXKw8HqKKK\n", DSR_PRINT_LEVEL_SERVICE);
-        press_any_key_to_exit();
+        exit_with_error_code(DSR_ERROR_CODE_ACCOUNT_PATH);
     }
 
     $account_paths = glob($sc2_accounts_root_path.DIRECTORY_SEPARATOR.'*', GLOB_ONLYDIR);
@@ -109,7 +118,7 @@ function get_replay_folders() {
 
     if (count($replay_folders) === 0) {
         dsr_print("Could not find SC2 Replays folder. Get help in Discord https://discord.gg/KXKw8HqKKK\n", DSR_PRINT_LEVEL_SERVICE);
-        press_any_key_to_exit();
+        exit_with_error_code(DSR_ERROR_CODE_REPLAY_PATH);
     }
 
     return $replay_folders;
@@ -140,12 +149,8 @@ function get_sc2_accounts_root_path() {
     return false;
 }
 
-function press_any_key_to_exit() {
-    // It doesn't work when compiled to exe.
-    // fgetc(STDIN);
-    // dsr_print("\nPress ENTER to exit...");
-    // dsr_print("\nProgram will close in 10 seconds...");
-    die;
+function exit_with_error_code($error_code = DSR_ERROR_CODE_OK) {
+    exit($error_code);
 }
 
 function ensure_latest_version() {
@@ -155,13 +160,13 @@ function ensure_latest_version() {
     if ($version_info['fail'] ?? false) {
         dsr_print("Failed to connect to ds-rating.com website:\n", DSR_PRINT_LEVEL_SERVICE);
         dsr_print(($version_info['reason']??'noreason')."\n", DSR_PRINT_LEVEL_SERVICE);
-        press_any_key_to_exit();
+        exit_with_error_code(DSR_ERROR_CODE_VERSION);
     }
 
     if (($version_info['version']??0) !== DSR_UPLOADER_VERSION) {
         dsr_print("Your replay uploader version is outdated.\n", DSR_PRINT_LEVEL_SERVICE);
         dsr_print("Run updater or download new version at: ".DSR_DOMAIN."/download/\n", DSR_PRINT_LEVEL_SERVICE);
-        press_any_key_to_exit();
+        exit_with_error_code(DSR_ERROR_CODE_VERSION);
     }
 
     dsr_print("You are using latest uploader version, good.\n");
@@ -322,7 +327,7 @@ function get_reply($url, $context = null) {
     if ($response_string === false) {
         return [
             'fail' => true,
-            'reason' => 'error while trying to get reply from '.$url."\n".(error_get_last()['message']??'')."\n",
+            'reason' => 'error while trying to get reply from '.$url."\n".(error_get_last()['message']??'nomessage'),
             ];
     }
 
@@ -352,6 +357,6 @@ function flush_all_buffered_text() {
 function dsr_print($message, $level = DSR_PRINT_LEVEL_FULL) {
     $print_level = $GLOBALS['print_level'] ?? DSR_PRINT_LEVEL_FULL;
     if ($level >= $print_level) {
-        echo($message);
+        echo $message;
     }
 }
