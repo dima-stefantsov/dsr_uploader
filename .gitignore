@@ -2,3 +2,6 @@
 /old_replays.json
 /ds-rating.com_uploader/
 *.zip
+/src/log_errors.txt
+/src/log_uploads.txt
+/src/old_replays.json
