@@ -1,5 +1,5 @@
 <?php
-define('DSR_UPLOADER_VERSION', 6);
+define('DSR_UPLOADER_VERSION', 7);
 define('OLD_REPLAYS_CONFIG_PATH', __DIR__.'/old_replays.json');
 define('DSR_DOMAIN', 'https://ds-rating.com');
 
@@ -97,7 +97,11 @@ function get_replay_folders() {
 
     $sc2_accounts_root_path = get_sc2_accounts_root_path();
     if ($sc2_accounts_root_path === false) {
-        dsr_print("Could not find SC2 Accounts folder. Get help in Discord https://discord.gg/KXKw8HqKKK\n", DSR_PRINT_LEVEL_SERVICE);
+        dsr_print(
+            "Could not find SC2 Accounts folder.\n".
+            "Move Uploader folder into your \"Documents/StarCraft II\" folder to help Uploader find it.\n".
+            "Get more help in Discord https://discord.gg/KXKw8HqKKK\n",
+            DSR_PRINT_LEVEL_SERVICE);
         exit_with_error_code(DSR_ERROR_CODE_ACCOUNT_PATH);
     }
 
@@ -121,6 +125,24 @@ function get_replay_folders() {
 }
 
 function get_sc2_accounts_root_path() {
+    // Hardcode if everything else failed.
+    // return 'C:\Users\your username\Documents\StarCraft II\Accounts';
+
+
+    // If you put Uploader somewhere inside your documents/sc2 folder.
+    $sc2_folder_position = strpos(__DIR__, 'StarCraft II');
+    if ($sc2_folder_position === false) {
+        $sc2_folder_position = stripos(__DIR__, 'StarCraft II');
+    }
+    if ($sc2_folder_position !== false) {
+        $accounts_path = substr(__DIR__, 0, $sc2_folder_position).'StarCraft II'.DIRECTORY_SEPARATOR.'Accounts';
+        if (is_dir($accounts_path)) {
+            return $accounts_path;
+        }
+    }
+
+
+    // If you have default english documents folder name.
     $current_working_directory = getcwd();
     $current_user_path = getenv('USERPROFILE');
     $possible_user_paths = [
@@ -141,6 +163,19 @@ function get_sc2_accounts_root_path() {
             }
         }
     }
+
+
+    // You may pass sc2 accounts root path via command line argument.
+    // Make sure to quote it to protect from spaces in path.
+    //
+    // Example call 1: >upload.bat "C:\Users\your username\Documents\StarCraft II\Accounts"
+    // Example call 2: >bin/php/php.exe src/uploader.php "C:\Users\your username\Documents\StarCraft II\Accounts"
+    // Example call 3: >php uploader.php "C:\Users\your username\Documents\StarCraft II\Accounts"
+    $first_command_line_argument = $GLOBALS['argv'][1] ?? false;
+    if ($first_command_line_argument !== false && @is_dir($first_command_line_argument)) {
+        return $first_command_line_argument;
+    }
+
 
     return false;
 }
