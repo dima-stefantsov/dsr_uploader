@@ -1,5 +1,5 @@
 <?php
-define('DSR_UPLOADER_VERSION', 5);
+define('DSR_UPLOADER_VERSION', 6);
 define('OLD_REPLAYS_CONFIG_PATH', __DIR__.'/old_replays.json');
 define('DSR_DOMAIN', 'https://ds-rating.com');
 

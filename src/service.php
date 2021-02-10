@@ -14,9 +14,9 @@ define('CMD_UPDATER', "\"$php_bin\" \"$updater_bin\" $updater_arguments");
 run_updater(); // check for updates on each system startup, or once a ~day.
 for ($i = 0; $i < 100; $i++) {
     run_uploader();
-    sleep(rand(600,1800)); // check for new DS replays once every 10-30 minutes.
+    sleep(rand(600,1800)); // check for new DS replays every 10-30 minutes.
 }
-
+die;
 
 
 
