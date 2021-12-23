@@ -142,22 +142,46 @@ function get_sc2_accounts_root_path() {
     }
 
 
-    // If you have default english documents folder name.
     $current_working_directory = getcwd();
     $current_user_path = getenv('USERPROFILE');
+    $current_user_path_macos = getenv('HOME');
     $possible_user_paths = [
         $current_working_directory, // actual user path is set as cwd for service.
         $current_user_path, // works for manual launch as current user.
+        $current_user_path_macos, // works for manual launch as current user in MacOS.
         ];
 
     foreach ($possible_user_paths as $possible_user_path) {
         if ($possible_user_path) {
-            $accounts_path = $possible_user_path.DIRECTORY_SEPARATOR.'Documents'.DIRECTORY_SEPARATOR.'StarCraft II'.DIRECTORY_SEPARATOR.'Accounts';
+            // Win7+.
+            $accounts_path =
+                $possible_user_path.
+                DIRECTORY_SEPARATOR.'Documents'. // if you have default english documents folder name.
+                DIRECTORY_SEPARATOR.'StarCraft II'.
+                DIRECTORY_SEPARATOR.'Accounts';
             if (is_dir($accounts_path)) {
                 return $accounts_path;
             }
 
-            $accounts_path = $possible_user_path.DIRECTORY_SEPARATOR.'My Documents'.DIRECTORY_SEPARATOR.'StarCraft II'.DIRECTORY_SEPARATOR.'Accounts';
+            // Win XP.
+            $accounts_path =
+                $possible_user_path.
+                DIRECTORY_SEPARATOR.'My Documents'.
+                DIRECTORY_SEPARATOR.'StarCraft II'.
+                DIRECTORY_SEPARATOR.'Accounts';
+            if (is_dir($accounts_path)) {
+                return $accounts_path;
+            }
+
+            // MacOS.
+            // Works on MacOS 11.3.
+            $accounts_path =
+                $possible_user_path.
+                DIRECTORY_SEPARATOR.'Library'.
+                DIRECTORY_SEPARATOR.'Application Support'.
+                DIRECTORY_SEPARATOR.'Blizzard'.
+                DIRECTORY_SEPARATOR.'StarCraft II'.
+                DIRECTORY_SEPARATOR.'Accounts';
             if (is_dir($accounts_path)) {
                 return $accounts_path;
             }
