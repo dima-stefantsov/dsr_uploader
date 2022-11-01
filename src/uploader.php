@@ -1,6 +1,6 @@
-<?php
-define('DSR_UPLOADER_VERSION', 7);
-define('OLD_REPLAYS_CONFIG_PATH', __DIR__.'/old_replays.json');
+<?php $start = microtime(true);
+define('DSR_UPLOADER_VERSION', 9);
+define('OLD_REPLAYS_CONFIG_PATH', __DIR__.'/old_replays_v2.json');
 define('DSR_DOMAIN', 'https://ds-rating.com');
 
 define('DSR_PRINT_LEVEL_FULL', 0);
@@ -11,6 +11,7 @@ define('DSR_ERROR_CODE_OK', 0);
 define('DSR_ERROR_CODE_VERSION', 10);
 define('DSR_ERROR_CODE_ACCOUNT_PATH', 20);
 define('DSR_ERROR_CODE_REPLAY_PATH', 30);
+define('DSR_ERROR_CODE_CONFIG_PERMISSIONS', 40);
 
 
 
@@ -38,19 +39,32 @@ if ($new_replays_count === 0) {
 
 dsr_print("Uploading new replays...\n");
 $current_replay_index = 0;
-foreach ($new_replay_paths as $new_replay_path) {
-    $current_replay_index++;
-    $success = upload_replay($new_replay_path, $current_replay_index, $new_replays_count);
+foreach ($new_replay_paths as $new_replay_path) { $current_replay_index++;
+    dsr_print("\n$current_replay_index/$new_replays_count $new_replay_path\n", DSR_PRINT_LEVEL_SERVICE);
+    $success = upload_replay($new_replay_path);
     if ($success) {
         $old_replay_paths[] = $new_replay_path;
+    }
+
+    // Save processed replays history
+    // every 100 replays uploaded at a time.
+    if ($current_replay_index%100 === 0) {
+        save_old_replay_paths($old_replay_paths);
+    }
+
+    // Service is launching uploader every 10-30 minutes,
+    // committing changes and quitting at 9 minutes.
+    if ($GLOBALS['is_service'] ?? false) {
+        $duration_running_seconds = microtime(true) - $start;
+        if ($duration_running_seconds > 9*60) {
+            break;
+        }
     }
 }
 flush_all_buffered_text();
 
-// This way to store data is not reliable, can not save it after each
-// processed replay, or we will risk loosing all info, if for example
-// user will Ctrl+C early.
 save_old_replay_paths($old_replay_paths);
+dsr_print("\nSaved ".count($old_replay_paths)." processed replays list.\n");
 
 exit_with_error_code(DSR_ERROR_CODE_OK);
 
@@ -78,9 +92,13 @@ exit_with_error_code(DSR_ERROR_CODE_OK);
 
 
 function process_command_line_arguments() {
+    $GLOBALS['print_level'] = DSR_PRINT_LEVEL_FULL;
+    $GLOBALS['is_service'] = false;
+
     foreach (($GLOBALS['argv']??[]) as $arg) {
         if ($arg === 'print_level_service') {
             $GLOBALS['print_level'] = DSR_PRINT_LEVEL_SERVICE;
+            $GLOBALS['is_service'] = true; // supporting legacy v7 service launcher
         }
         else if ($arg === 'print_level_silent') {
             $GLOBALS['print_level'] = DSR_PRINT_LEVEL_SILENT;
@@ -88,6 +106,9 @@ function process_command_line_arguments() {
         else if ($arg === 'get_version') {
             echo DSR_UPLOADER_VERSION;
             exit_with_error_code(DSR_ERROR_CODE_OK);
+        }
+        else if ($arg === 'service') {
+            $GLOBALS['is_service'] = true;
         }
     }
 }
@@ -278,15 +299,13 @@ function get_old_replay_paths() {
     return $old_replay_paths;
 }
 
-function get_new_replay_paths($all_replay_paths, $old_replay_paths) {
+function get_new_replay_paths(&$all_replay_paths, &$old_replay_paths) {
     $new_replay_paths = array_diff($all_replay_paths, $old_replay_paths);
     natsort($new_replay_paths);
     return array_values($new_replay_paths);
 }
 
-function upload_replay($replay_path, $current_index, $count) {
-    dsr_print("\n$current_index/$count $replay_path\n", DSR_PRINT_LEVEL_SERVICE);
-
+function upload_replay($replay_path) {
     // Using this to make reading console output more pleasant, no jitter.
     flush_buffered_text();
     ob_start();
@@ -357,9 +376,14 @@ function post_upload_file($url, $file_path) {
         ]]));
 }
 
-function save_old_replay_paths($old_replay_paths) {
-    file_put_contents(OLD_REPLAYS_CONFIG_PATH, json_encode($old_replay_paths, JSON_PRETTY_PRINT));
-    dsr_print("\nSaved ".count($old_replay_paths)." processed replays list.\n");
+function save_old_replay_paths(&$old_replay_paths) {
+    $tmp = OLD_REPLAYS_CONFIG_PATH.'.tmp';
+    file_put_contents($tmp, json_encode($old_replay_paths, JSON_PRETTY_PRINT));
+    $success = rename($tmp, OLD_REPLAYS_CONFIG_PATH);
+    if (!$success) {
+        dsr_print("Error: could not save config.\n", DSR_PRINT_LEVEL_SERVICE);
+        exit_with_error_code(DSR_ERROR_CODE_CONFIG_PERMISSIONS);
+    }
 }
 
 function plural($amount, $singular = '', $plural = 's') {

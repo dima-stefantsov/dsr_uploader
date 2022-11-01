@@ -1,7 +1,7 @@
 <?php
 $php_bin = dirname(__DIR__).'/bin/php/php.exe';
 $uploader_bin = __DIR__.'/uploader.php';
-$uploader_arguments = 'print_level_service';
+$uploader_arguments = 'print_level_service service';
 $updater_bin = __DIR__.'/update.php';
 $updater_arguments = 'print_level_service';
 

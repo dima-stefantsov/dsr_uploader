@@ -4,4 +4,4 @@
 *.zip
 /src/log_errors.txt
 /src/log_uploads.txt
-/src/old_replays.json
+/src/old_replays*
