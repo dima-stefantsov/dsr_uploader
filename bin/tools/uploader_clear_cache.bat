@@ -1,3 +1,3 @@
 @echo off
-del /F "%~dp0\..\..\src\old_replays.json" %*
+del /F "%~dp0\..\..\src\old_replays_v2.json" %*
 pause
