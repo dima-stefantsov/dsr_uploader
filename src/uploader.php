@@ -268,8 +268,10 @@ function get_all_replay_paths($replay_folders) {
                 continue;
             }
 
-            $filename_lowercase = strtolower(pathinfo($path, PATHINFO_FILENAME));
-            if (!string_starts_with($filename_lowercase, 'direct strike')) {
+            $filename = pathinfo($path, PATHINFO_FILENAME);
+            $filename_lowercase = strtolower($filename);
+            if (!string_starts_with($filename_lowercase, 'direct strike') &&
+                !string_starts_with($filename, '다이렉트 스트라이크')) { // korean Direct Strike map name
                 continue;
             }
 
