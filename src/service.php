@@ -9,38 +9,24 @@ define('DSR_ERROR_CODE_VERSION', 10);
 define('CMD_UPLOADER', "\"$php_bin\" \"$uploader_bin\" $uploader_arguments");
 define('CMD_UPDATER', "\"$php_bin\" \"$updater_bin\" $updater_arguments");
 
-
-
-run_updater(); // check for updates on each system startup, or once a ~day.
+run_command(CMD_UPDATER); // check for updates on each system startup, or once a ~day.
 for ($i = 0; $i < 100; $i++) {
-    run_uploader();
+    $result_code = run_command(CMD_UPLOADER);
+    if ($result_code === DSR_ERROR_CODE_VERSION) {
+        run_command(CMD_UPDATER);
+    }
     sleep(rand(600,1800)); // check for new DS replays every 10-30 minutes.
 }
-die;
 
-
-
-
-
-
-
-
-
-
-function run_uploader() {
-    exec(CMD_UPLOADER, $output_lines, $result_code);
+function run_command($command) {
+    exec($command, $output_lines, $result_code);
     foreach ($output_lines as $output_line) {
         echo $output_line."\n";
     }
 
-    if ($result_code === DSR_ERROR_CODE_VERSION) {
-        run_updater();
+    if ($result_code !== 0) {
+        throw new Exception("Error running command: $result_code");
     }
-}
 
-function run_updater() {
-    exec(CMD_UPDATER, $output_lines, $result_code);
-    foreach ($output_lines as $output_line) {
-        echo $output_line."\n";
-    }
+    return $result_code;
 }
